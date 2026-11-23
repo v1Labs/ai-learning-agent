@@ -2,7 +2,7 @@ import "server-only";
 import Anthropic from "@anthropic-ai/sdk";
 import { z } from "zod";
 import { betaZodOutputFormat } from "@anthropic-ai/sdk/helpers/beta/zod";
-import { anthropic, assertNotRefused, baseParams, COURSE_DESIGNER_SYSTEM, pdfDocumentBlock } from "../claude";
+import { anthropic, assertNotRefused, baseParams, COURSE_DESIGNER_EFFORT, COURSE_DESIGNER_SYSTEM, logUsage, pdfDocumentBlock } from "../claude";
 import type { CardKind, DiscoveryCard, Lesson, Objective } from "../types";
 import { collectSources } from "./sources";
 
@@ -124,7 +124,7 @@ async function pdfCard(lesson: Lesson, objective: Objective, kind: CardKind, avo
   const response = await anthropic.beta.messages.parse({
     ...baseParams,
     max_tokens: 4000,
-    output_config: { effort: "low", format: betaZodOutputFormat(PdfCardSchema) },
+    output_config: { effort: COURSE_DESIGNER_EFFORT, format: betaZodOutputFormat(PdfCardSchema) },
     system: COURSE_DESIGNER_SYSTEM,
     messages: [
       {
@@ -139,6 +139,7 @@ async function pdfCard(lesson: Lesson, objective: Objective, kind: CardKind, avo
       },
     ],
   });
+  logUsage("card:pdf", response.usage);
   assertNotRefused(response);
   if (!response.parsed_output) throw new Error("Failed to write fallback card");
   return { ...response.parsed_output, source: null, fromWeb: false };

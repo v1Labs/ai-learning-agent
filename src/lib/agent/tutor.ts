@@ -1,6 +1,6 @@
 import "server-only";
 import Anthropic from "@anthropic-ai/sdk";
-import { anthropic, baseParams, pdfDocumentBlock } from "../claude";
+import { anthropic, baseParams, logUsage, pdfDocumentBlock } from "../claude";
 import { currentObjective, LESSON_QUESTIONS, openQuestion, revealNextHint } from "../lesson";
 import { TUTOR } from "../persona";
 import { saveLesson, withLesson } from "../store";
@@ -80,7 +80,10 @@ export async function runTutorTurn(lesson: Lesson, userMessage: string, onText: 
       ],
     },
     ...lesson.chat.map((m) => ({ role: m.role, content: m.content })),
-    { role: "user", content: userMessage },
+    // Breakpoint on the newest learner message (default 5-minute TTL, after
+    // the PDF's 1-hour one): next turn reads the history up to here from
+    // cache. The lesson state below changes every turn, so it stays after it.
+    { role: "user", content: [{ type: "text", text: userMessage, cache_control: { type: "ephemeral" } }] },
     // Mid-conversation system message: per-turn state without invalidating
     // the cached prefix (tools -> system -> PDF -> history).
     { role: "system", content: lessonStateMessage(lesson) },
@@ -101,6 +104,7 @@ export async function runTutorTurn(lesson: Lesson, userMessage: string, onText: 
       onText(delta);
     });
     const message = await stream.finalMessage();
+    logUsage(`tutor:${turn}`, message.usage);
 
     if (message.stop_reason === "refusal") {
       const note = "\n\nI can't help with that one. Let's get back to the lesson.";

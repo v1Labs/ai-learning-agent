@@ -17,13 +17,23 @@ export async function generateLessonContent(lessonId: string) {
   const lesson = await getLesson(lessonId);
   if (!lesson || lesson.phase === "planning" || lesson.phase === "awaiting_approval") return;
 
+  const pending = lesson.allocation.filter(({ objectiveId }) => lesson.generation[objectiveId]?.status !== "ready");
+  const generate = ({ objectiveId, count }: { objectiveId: string; count: number }) =>
+    once(`${lessonId}:q:${objectiveId}`, () => generateObjective(lessonId, objectiveId, count));
+
+  // Parallel requests can't read a cache entry that another is still writing,
+  // so a cold fan-out pays the full PDF write once per objective (ADR 0022).
+  // The first objective runs alone to warm the cache. The learner waits for
+  // its questions anyway, so time to first question doesn't change.
+  const [first, ...rest] = pending;
+  const firstDone = first ? generate(first) : Promise.resolve();
+
   await Promise.all(
-    lesson.allocation.map(async ({ objectiveId, count }) => {
-      if (lesson.generation[objectiveId]?.status !== "ready") {
-        await once(`${lessonId}:q:${objectiveId}`, () => generateObjective(lessonId, objectiveId, count));
-      }
+    lesson.allocation.map(async (alloc) => {
+      if (alloc === first) await firstDone;
+      else if (rest.includes(alloc)) await firstDone.then(() => generate(alloc));
       // Cards need the objective's questions (to avoid leaking answers), so they follow.
-      const cards = (await getLesson(lessonId))?.cards.filter((c) => c.objectiveId === objectiveId && c.status !== "ready");
+      const cards = (await getLesson(lessonId))?.cards.filter((c) => c.objectiveId === alloc.objectiveId && c.status !== "ready");
       await Promise.all((cards ?? []).map((c) => once(`${lessonId}:card:${c.id}`, () => generateCard(lessonId, c.id))));
     }),
   );

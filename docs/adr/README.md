@@ -35,3 +35,4 @@ Lightweight ADRs ([Nygard format](https://cognitect.com/blog/2011/11/15/document
 | [0019](0019-deploy-on-vercel-with-redis-and-blob.md) | Deploy on Vercel with Upstash Redis and private Vercel Blob | Accepted |
 | [0020](0020-protect-api-spend-on-shared-deployments.md) | Protect API spend on shared deployments: access code, rate limits, spend cap | Accepted |
 | [0021](0021-extract-pdf-content-locally.md) | Extract PDF content locally and send text (plus selected page images) instead of the raw PDF | Proposed |
+| [0022](0022-make-prompt-caching-actually-hit.md) | Make prompt caching hit: 1-hour PDF TTL, one effort level, warm before fan-out | Accepted |

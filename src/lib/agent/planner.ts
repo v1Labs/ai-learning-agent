@@ -2,7 +2,7 @@ import "server-only";
 import { z } from "zod";
 import { betaZodOutputFormat } from "@anthropic-ai/sdk/helpers/beta/zod";
 import { nanoid } from "nanoid";
-import { anthropic, assertNotRefused, baseParams, COURSE_DESIGNER_SYSTEM, pdfDocumentBlock } from "../claude";
+import { anthropic, assertNotRefused, baseParams, COURSE_DESIGNER_EFFORT, COURSE_DESIGNER_SYSTEM, logUsage, pdfDocumentBlock } from "../claude";
 import type { Lesson, LessonPlan } from "../types";
 
 const PlanSchema = z.object({
@@ -48,7 +48,7 @@ Produce a revised plan that addresses the feedback while staying grounded in the
   const response = await anthropic.beta.messages.parse({
     ...baseParams,
     max_tokens: 16000,
-    output_config: { effort: "medium", format: betaZodOutputFormat(PlanSchema) },
+    output_config: { effort: COURSE_DESIGNER_EFFORT, format: betaZodOutputFormat(PlanSchema) },
     system: COURSE_DESIGNER_SYSTEM,
     messages: [
       {
@@ -57,6 +57,7 @@ Produce a revised plan that addresses the feedback while staying grounded in the
       },
     ],
   });
+  logUsage(previousPlan ? "plan:revise" : "plan", response.usage);
   assertNotRefused(response);
   const parsed = response.parsed_output;
   if (!parsed) throw new Error("Failed to parse lesson plan");
