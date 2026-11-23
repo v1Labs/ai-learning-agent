@@ -3,20 +3,26 @@
 import Link from "next/link";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { api } from "@/lib/api";
-import type { PublicLesson } from "@/lib/types";
+import type { AnswerResult, PublicLesson, PublicQuestion } from "@/lib/types";
+import { LevelUpModal } from "./LevelUpModal";
 import { PlanReview } from "./PlanReview";
 import { ProgressReport } from "./ProgressReport";
-import { ObjectiveStepper } from "./ObjectiveStepper";
+import { QuestionProgress } from "./QuestionProgress";
 import { QuizWidget } from "./QuizWidget";
-import { TutorChat } from "./TutorChat";
 import { Spinner } from "./Spinner";
+import { TutorChat } from "./TutorChat";
+import { XpBar } from "./XpBar";
 
 /** Orchestrates the lesson phases. The server owns state; this renders whatever phase it reports. */
 export function LessonView({ initial }: { initial: PublicLesson }) {
   const [lesson, setLesson] = useState(initial);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState<string | null>(null);
-  // After the last answer we keep showing the quiz (with its explanation) until the learner moves on.
+  // A just-answered question stays on screen (with its explanation) until the learner clicks Next.
+  const [answered, setAnswered] = useState<PublicQuestion | null>(null);
+  // Card modal: opened by a level-up, or by clicking a collected card.
+  const [openCardId, setOpenCardId] = useState<string | null>(null);
+  const [levelUp, setLevelUp] = useState<number | null>(null);
   const [showReport, setShowReport] = useState(initial.phase === "complete");
   const inflight = useRef(false);
 
@@ -35,19 +41,48 @@ export function LessonView({ initial }: { initial: PublicLesson }) {
     }
   }, []);
 
+  const refresh = useCallback(async () => setLesson(await api.get(lesson.id)), [lesson.id]);
+
   // Auto-advance through the agent-driven steps. This syncs with an external
   // system (the server-side state machine), which is what effects are for.
   useEffect(() => {
     /* eslint-disable react-hooks/set-state-in-effect */
     if (lesson.phase === "planning") run("Reading your PDF and drafting a learning plan…", () => api.draftPlan(lesson.id));
-    else if (lesson.phase === "learning" && !lesson.currentQuestion)
-      run("Writing your first question…", () => api.nextQuestion(lesson.id));
     else if (lesson.phase === "complete" && showReport && !lesson.report)
       run("Preparing your progress report…", () => api.report(lesson.id));
     /* eslint-enable react-hooks/set-state-in-effect */
-  }, [lesson.phase, lesson.currentQuestion, lesson.report, lesson.id, showReport, run]);
+  }, [lesson.phase, lesson.report, lesson.id, showReport, run]);
 
-  const refresh = useCallback(async () => setLesson(await api.get(lesson.id)), [lesson.id]);
+  // On load, make sure background generation is running (resumes after a server restart).
+  useEffect(() => {
+    if (initial.phase === "learning" || initial.phase === "complete") api.generate(initial.id).catch(() => {});
+  }, [initial.id, initial.phase]);
+
+  // Poll while we're waiting on background work the learner can see.
+  const openCard = lesson.cards.find((c) => c.id === openCardId);
+  const waiting = (!answered && lesson.waitingOn?.status === "pending") || openCard?.state === "researching";
+  useEffect(() => {
+    if (!waiting) return;
+    const t = setInterval(() => refresh().catch(() => {}), 1500);
+    return () => clearInterval(t);
+  }, [waiting, refresh]);
+
+  function onAnswered(result: AnswerResult) {
+    setLesson(result.lesson);
+    if (result.correct) setAnswered(result.question);
+    if (result.levelUp) {
+      setLevelUp(result.levelUp.level);
+      setOpenCardId(result.levelUp.cardId);
+    }
+  }
+
+  function onNext() {
+    setAnswered(null);
+    if (lesson.phase === "complete") setShowReport(true);
+  }
+
+  const question = answered ?? lesson.activeQuestion;
+  const inQuiz = lesson.phase === "learning" || (lesson.phase === "complete" && !showReport);
 
   return (
     <div className="flex min-h-screen flex-col">
@@ -60,8 +95,11 @@ export function LessonView({ initial }: { initial: PublicLesson }) {
 
       <div className="grid flex-1 grid-cols-1 lg:grid-cols-[1fr_380px]">
         <main className="mx-auto w-full max-w-3xl px-4 py-8">
-          {lesson.plan && lesson.phase !== "awaiting_approval" && (
-            <ObjectiveStepper lesson={lesson} />
+          {lesson.phase !== "planning" && lesson.phase !== "awaiting_approval" && (
+            <div className="mb-8 space-y-4">
+              <XpBar progress={lesson.progress} cards={lesson.cards} onOpenCard={setOpenCardId} />
+              <QuestionProgress answered={lesson.answeredQuestions} total={lesson.totalQuestions} />
+            </div>
           )}
 
           {error && (
@@ -83,22 +121,33 @@ export function LessonView({ initial }: { initial: PublicLesson }) {
             />
           )}
 
-          {!loading && (lesson.phase === "learning" || (lesson.phase === "complete" && !showReport)) &&
-            lesson.currentQuestion && (
-              <QuizWidget
-                key={lesson.currentQuestion.id}
-                lessonId={lesson.id}
-                question={lesson.currentQuestion}
-                objective={lesson.plan?.objectives.find((o) => o.id === lesson.currentQuestion!.objectiveId)}
-                isLast={lesson.phase === "complete"}
-                onAnswered={(l) => setLesson(l)}
-                onNext={() =>
-                  lesson.phase === "complete"
-                    ? setShowReport(true)
-                    : run("Writing your next question…", () => api.nextQuestion(lesson.id))
-                }
-              />
-            )}
+          {!loading && inQuiz && question && (
+            <QuizWidget
+              key={question.id}
+              lessonId={lesson.id}
+              question={question}
+              total={lesson.totalQuestions}
+              objective={lesson.plan?.objectives.find((o) => o.id === question.objectiveId)}
+              isLast={lesson.phase === "complete"}
+              onAnswered={onAnswered}
+              onNext={onNext}
+            />
+          )}
+
+          {!loading && inQuiz && !question && lesson.waitingOn?.status === "pending" && (
+            <Spinner
+              label={lesson.answeredQuestions === 0 ? "Writing your questions…" : "Finishing the next set of questions…"}
+            />
+          )}
+
+          {!loading && inQuiz && !question && lesson.waitingOn?.status === "failed" && (
+            <div className="rounded-xl border border-rose-300 p-5 text-sm dark:border-rose-800">
+              Something went wrong writing these questions.{" "}
+              <button className="font-medium underline" onClick={() => run("Retrying…", () => api.generate(lesson.id))}>
+                Try again
+              </button>
+            </div>
+          )}
 
           {!loading && lesson.phase === "complete" && showReport && lesson.report && <ProgressReport lesson={lesson} />}
         </main>
@@ -107,6 +156,17 @@ export function LessonView({ initial }: { initial: PublicLesson }) {
           <TutorChat lesson={lesson} onTurnComplete={refresh} />
         </aside>
       </div>
+
+      {openCard && (
+        <LevelUpModal
+          card={openCard}
+          level={levelUp}
+          onClose={() => {
+            setOpenCardId(null);
+            setLevelUp(null);
+          }}
+        />
+      )}
     </div>
   );
 }

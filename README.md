@@ -1,6 +1,6 @@
 # AI Learning Agent
 
-Turns a PDF into a structured, interactive lesson: the agent drafts a learning path, the learner approves it (human-in-the-loop), then works through AI-generated multiple-choice questions per objective with green/red feedback, escalating hints and a Socratic tutor. It finishes with a progress report and study tips.
+Turns a PDF into a structured, interactive lesson: the agent drafts a learning path, the learner approves it (human-in-the-loop), then works through a 10-question quiz with green/red feedback, escalating hints and a Socratic tutor. Correct answers earn XP; level-ups award collectible **discovery cards** researched from the web. It finishes with a progress report and study tips.
 
 ## Running it
 
@@ -16,8 +16,9 @@ npm run dev                  # http://localhost:3000
 |---|---|---|
 | `planning` | PDF uploaded; agent reads it and drafts objectives with difficulty | `POST /api/lessons`, `POST /api/lessons/:id/plan {action:"draft"}` |
 | `awaiting_approval` | **HITL**: learner reorders or drops objectives and approves, or sends feedback for a redraft | `POST …/plan {action:"revise"\|"approve"}` |
-| `learning` | Agent generates an MCQ for the current objective; learner answers in the quiz widget | `POST …/question`, `POST …/answer` |
-| | Correct → green + explanation → next. Incorrect → red + next hint → retry | |
+| `learning` | All 10 questions and 3 discovery cards are generated in parallel in the background; the learner starts as soon as the first objective is ready | `POST …/generate` (resume/retry), `POST …/answer` |
+| | Correct → green + explanation + XP → next. Incorrect → red + next hint → retry | |
+| | Level-ups (about questions 2, 5 and 10) reveal a discovery card | |
 | | Tutor chat on the side: explanations and hints, never answers | `POST …/chat` (streamed) |
 | `complete` | Per-objective stats + Claude-written strengths, review areas, study tips | `POST …/report` |
 
@@ -32,9 +33,14 @@ Each decision below has an Architecture Decision Record with context, alternativ
 - Grading is deterministic code, with no model call: it's instant and can't be argued with.
 - The tutor model is **never given the answer key**. It sees the question and choices, which wrong options were already tried, and how many hints have been used. Its hints come from a `get_hint` tool that releases pre-written, escalating hints. The system prompt adds a second layer: refuse to solve the question and steer back to the lesson.
 
+**Gamification tuned for completion.** The goal is more learners finishing 10 questions, so rewards pay out immediately: XP on every correct answer (more for harder questions, a bonus for unaided answers, never deducted) and three levels, each awarding a discovery card. The final level is tied to finishing the lesson. Thresholds were chosen by simulation (`scripts/simulate-xp.py`). Funnel events are logged per lesson.
+
+**Discovery cards** bring in one surprising, sourced fact from beyond the PDF, researched with Claude's web search tool. Sources must come from the actual search results, cards can't spoil upcoming questions, and if research fails the card falls back to the PDF, so a level-up never errors.
+
 **Agent decomposition.** Each role has a narrow job and its own prompt (`src/lib/agent/`):
 - `planner.ts`: drafts and revises the plan (structured output, Zod schema).
-- `quizmaster.ts`: generates one MCQ with explanation and 2 escalating hints, avoids repeating earlier questions, and validates its own output (regenerates if malformed).
+- `quizmaster.ts`: generates an objective's questions in one call, each with an explanation and 2 escalating hints, and validates its own output (regenerates the shortfall if malformed).
+- `cardwriter.ts`: researches a discovery card with web search, then formats it with a verified source (PDF fallback).
 - `tutor.ts`: streaming tool-use loop for open-ended help.
 - `reporter.ts`: the narrative report on top of deterministically computed stats.
 
@@ -57,16 +63,20 @@ src/
   lib/
     types.ts                     domain + public projections
     lesson.ts                    state machine, grading, stats
+    gamification.ts              XP rules and levels
+    jobs.ts                      background quiz + card generation
     store.ts                     file-backed persistence + per-lesson lock
     claude.ts                    client, shared params, PDF block
-    agent/                       planner, quizmaster, tutor, reporter
+    agent/                       planner, quizmaster, cardwriter, tutor, reporter
+scripts/simulate-xp.py           evidence for the level thresholds (ADR 0007)
+docs/adr/                        architecture decision records
 ```
 
 ## Known limitations / next steps
 
 - File-based store and an in-process lock: fine for a single-instance demo. Swap `store.ts` for Postgres/Redis to scale out.
-- Questions are generated just in time (~several seconds). They could be prefetched in the background while the learner reads the explanation.
+- The first question waits for its objective's generation call (~20s after approval). Objective 1 could be generated first or at lower effort.
 - No auth; lesson IDs are unguessable but not access-controlled.
 - An output-side guard on tutor replies (e.g. a cheap classifier checking for answer disclosure) would add defence in depth.
 - Adaptive difficulty (step up or down based on first-try accuracy) and spaced-repetition review of missed concepts.
-- Evals: a small set of PDFs plus rubric-graded checks on plan quality, question validity and tutor answer leakage.
+- Evals: a small set of PDFs plus rubric-graded checks on plan quality, question validity, tutor answer leakage, and discovery cards spoiling questions.

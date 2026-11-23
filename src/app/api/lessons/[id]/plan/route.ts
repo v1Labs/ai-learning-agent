@@ -1,8 +1,9 @@
-import type { NextRequest } from "next/server";
+import { after, type NextRequest } from "next/server";
 import { z } from "zod";
 import { draftPlan } from "@/lib/agent/planner";
 import { errorResponse } from "@/lib/http";
-import { assertPhase, toPublicLesson } from "@/lib/lesson";
+import { generateLessonContent } from "@/lib/jobs";
+import { assertPhase, startLearning, toPublicLesson } from "@/lib/lesson";
 import { saveLesson, withLesson } from "@/lib/store";
 
 export const maxDuration = 120;
@@ -21,7 +22,7 @@ const Body = z.discriminatedUnion("action", [
  * Human-in-the-loop plan endpoint:
  *  - draft:   agent proposes a plan from the PDF (idempotent)
  *  - revise:  learner gives feedback, agent redrafts
- *  - approve: learner confirms (optionally pruning/reordering objectives); learning begins
+ *  - approve: learner confirms (optionally pruning/reordering objectives); quiz generation starts
  */
 export async function POST(req: NextRequest, ctx: RouteContext<"/api/lessons/[id]/plan">) {
   try {
@@ -56,8 +57,9 @@ export async function POST(req: NextRequest, ctx: RouteContext<"/api/lessons/[id
             if (chosen.length === 0) throw new Error("No valid objectives selected");
             lesson.plan!.objectives = chosen;
           }
-          lesson.phase = "learning";
-          lesson.currentObjectiveIndex = 0;
+          startLearning(lesson);
+          // Generate the whole quiz and the cards in the background (ADR 0009).
+          after(() => generateLessonContent(lesson.id));
           break;
         }
       }

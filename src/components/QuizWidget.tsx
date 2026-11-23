@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { api } from "@/lib/api";
-import type { Objective, PublicLesson, PublicQuestion } from "@/lib/types";
+import type { AnswerResult, Objective, PublicQuestion } from "@/lib/types";
 import { DifficultyBadge } from "./DifficultyBadge";
 
 const LETTERS = "ABCDEFGH";
@@ -15,6 +15,7 @@ const LETTERS = "ABCDEFGH";
 export function QuizWidget({
   lessonId,
   question,
+  total,
   objective,
   isLast,
   onAnswered,
@@ -22,9 +23,10 @@ export function QuizWidget({
 }: {
   lessonId: string;
   question: PublicQuestion;
+  total: number;
   objective?: Objective;
   isLast: boolean;
-  onAnswered: (lesson: PublicLesson) => void;
+  onAnswered: (result: AnswerResult) => void;
   onNext: () => void;
 }) {
   const [selected, setSelected] = useState<number | null>(null);
@@ -43,7 +45,7 @@ export function QuizWidget({
       const result = await api.answer(lessonId, question.id, selected);
       setLastWrong(!result.correct);
       if (!result.correct) setSelected(null);
-      onAnswered(result.lesson);
+      onAnswered(result);
     } catch (e) {
       setError((e as Error).message);
     } finally {
@@ -55,6 +57,10 @@ export function QuizWidget({
     <section className="rounded-2xl border border-zinc-200 p-6 shadow-sm dark:border-zinc-800">
       {objective && (
         <div className="mb-4 flex flex-wrap items-center gap-2 text-sm text-zinc-500">
+          <span className="font-medium text-zinc-700 dark:text-zinc-300">
+            Question {question.number} of {total}
+          </span>
+          <span aria-hidden>·</span>
           <span>{objective.title}</span>
           <DifficultyBadge difficulty={objective.difficulty} />
         </div>
@@ -95,7 +101,15 @@ export function QuizWidget({
       {/* Feedback */}
       {done && question.explanation && (
         <div className="mt-6 rounded-xl border border-emerald-300 bg-emerald-50 p-4 dark:border-emerald-800 dark:bg-emerald-950/40">
-          <p className="font-medium text-emerald-800 dark:text-emerald-300">Correct!</p>
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <p className="font-medium text-emerald-800 dark:text-emerald-300">Correct!</p>
+            {question.xpAwarded && (
+              <span className="animate-[float-up_600ms_ease-out] rounded-full bg-amber-100 px-2.5 py-0.5 text-sm font-semibold text-amber-800 dark:bg-amber-900/50 dark:text-amber-200">
+                +{question.xpAwarded.base} XP
+                {question.xpAwarded.bonus > 0 && <> · +{question.xpAwarded.bonus} unaided</>}
+              </span>
+            )}
+          </div>
           <p className="mt-1 text-sm text-emerald-900 dark:text-emerald-100">{question.explanation}</p>
         </div>
       )}

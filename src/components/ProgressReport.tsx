@@ -1,5 +1,6 @@
 import Link from "next/link";
 import type { PublicLesson } from "@/lib/types";
+import { DiscoveryCard } from "./DiscoveryCard";
 
 export function ProgressReport({ lesson }: { lesson: PublicLesson }) {
   const report = lesson.report!;
@@ -13,7 +14,8 @@ export function ProgressReport({ lesson }: { lesson: PublicLesson }) {
       <p className="text-sm font-medium text-emerald-600 dark:text-emerald-400">Lesson complete</p>
       <h1 className="mt-1 text-3xl font-semibold tracking-tight">{report.headline}</h1>
 
-      <div className="mt-8 grid grid-cols-3 gap-3">
+      <div className="mt-8 grid grid-cols-2 gap-3 sm:grid-cols-4">
+        <Stat label="XP earned" value={String(lesson.progress.xp)} />
         <Stat label="First-try accuracy" value={`${pct}%`} />
         <Stat label="Questions" value={String(total)} />
         <Stat label="Hints used" value={String(hints)} />
@@ -49,6 +51,21 @@ export function ProgressReport({ lesson }: { lesson: PublicLesson }) {
       <div className="mt-6">
         <List title="Study tips" items={report.studyTips} tone="indigo" />
       </div>
+
+      {lesson.cards.some((c) => c.state !== "locked") && (
+        <div className="mt-10">
+          <h2 className="text-sm font-semibold uppercase tracking-wide text-orange-600 dark:text-orange-400">
+            Your discovery cards
+          </h2>
+          <div className="mt-3 grid gap-4 sm:grid-cols-2">
+            {lesson.cards
+              .filter((c) => c.state !== "locked")
+              .map((c) => (
+                <DiscoveryCard key={c.id} card={c} />
+              ))}
+          </div>
+        </div>
+      )}
 
       <Link href="/" className="mt-10 inline-block rounded-xl border border-zinc-300 px-5 py-2.5 font-medium hover:bg-zinc-50 dark:border-zinc-700 dark:hover:bg-zinc-900">
         Start a new lesson

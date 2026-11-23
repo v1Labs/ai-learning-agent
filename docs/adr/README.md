@@ -22,3 +22,5 @@ Lightweight ADRs ([Nygard format](https://cognitect.com/blog/2011/11/15/document
 | [0006](0006-file-backed-persistence.md) | File-backed persistence for the prototype | Accepted |
 | [0007](0007-xp-and-levels.md) | Gamify with XP and levels, tuned for 10-question completion | Accepted |
 | [0008](0008-discovery-cards-as-level-up-rewards.md) | Discovery cards from web research as level-up rewards | Accepted |
+| [0009](0009-generate-quiz-up-front-in-background.md) | Generate the whole quiz up front, in the background | Accepted |
+| [0010](0010-discovery-card-scheduling-and-research.md) | Schedule each card's topic at approval; research in two steps | Accepted |

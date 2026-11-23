@@ -1,7 +1,7 @@
 import "server-only";
 import Anthropic from "@anthropic-ai/sdk";
 import { anthropic, baseParams, pdfDocumentBlock } from "../claude";
-import { currentObjective, openQuestion, QUESTIONS_PER_OBJECTIVE, revealNextHint } from "../lesson";
+import { currentObjective, LESSON_QUESTIONS, openQuestion, revealNextHint } from "../lesson";
 import { saveLesson, withLesson } from "../store";
 import type { Lesson } from "../types";
 
@@ -31,17 +31,21 @@ const TOOLS: Anthropic.Beta.BetaTool[] = [
 
 function lessonStateMessage(lesson: Lesson): string {
   const obj = currentObjective(lesson);
+  const objIndex = obj ? (lesson.plan?.objectives.indexOf(obj) ?? -1) : -1;
   const q = openQuestion(lesson);
   const plan = lesson.plan;
   const lines = [`<lesson_state phase="${lesson.phase}">`];
   if (plan) {
     lines.push(`Lesson: ${plan.title}`);
     plan.objectives.forEach((o, i) =>
-      lines.push(`${i === lesson.currentObjectiveIndex ? "->" : "  "} Objective ${i + 1}: ${o.title} (${o.difficulty})`),
+      lines.push(`${i === objIndex ? "->" : "  "} Objective ${i + 1}: ${o.title} (${o.difficulty})`),
     );
   }
   if (lesson.phase === "awaiting_approval") lines.push("The learner is reviewing the proposed plan and has not started yet.");
-  if (obj) lines.push(`Questions per objective: ${QUESTIONS_PER_OBJECTIVE}`);
+  if (lesson.phase === "learning") {
+    const answered = lesson.questions.filter((x) => x.answeredCorrectly).length;
+    lines.push(`Progress: ${answered}/${LESSON_QUESTIONS} questions answered. Encourage the learner toward finishing all ${LESSON_QUESTIONS}.`);
+  }
   if (q) {
     lines.push("Active question (answer key intentionally withheld):", q.stem);
     q.choices.forEach((c, i) => lines.push(`  ${String.fromCharCode(65 + i)}. ${c}`));

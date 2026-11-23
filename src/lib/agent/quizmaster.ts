@@ -17,29 +17,39 @@ const QuestionSchema = z.object({
     ),
 });
 
-/** Generates the next MCQ for an objective, avoiding repeats of earlier questions. */
-export async function generateQuestion(lesson: Lesson, objective: Objective): Promise<Question> {
-  const previous = lesson.questions.filter((q) => q.objectiveId === objective.id).map((q) => `- ${q.stem}`);
+const QuestionSetSchema = z.object({ questions: z.array(QuestionSchema) });
 
-  const instructions = `Write one multiple-choice question assessing this learning objective.
+type Draft = z.infer<typeof QuestionSchema>;
+
+// Strict decoding can't express "exactly 4" or an in-range index, so check in code.
+const isValid = (q: Draft) => q.choices.length === 4 && q.correctIndex >= 0 && q.correctIndex < 4 && q.hints.length >= 1;
+
+/**
+ * Generates all `count` questions for one objective in a single call, so they
+ * cover different concepts and build in difficulty. Regenerates the shortfall
+ * once if some drafts are malformed.
+ */
+export async function generateQuestions(lesson: Lesson, objective: Objective, count: number): Promise<Question[]> {
+  const valid: Draft[] = [];
+
+  for (let attempt = 0; attempt < 2 && valid.length < count; attempt++) {
+    const needed = count - valid.length;
+    const avoid = valid.map((q) => `- ${q.stem}`).join("\n");
+    const instructions = `Write ${needed} multiple-choice question${needed === 1 ? "" : "s"} assessing this learning objective.
 
 <objective difficulty="${objective.difficulty}">
 ${objective.title}
 ${objective.description}
 Key concepts: ${objective.keyConcepts.join(", ")}
 </objective>
-${
-  previous.length
-    ? `\nThe learner has already answered these questions for this objective. Assess a different concept or angle:\n${previous.join("\n")}\n`
-    : ""
-}
-Match the ${objective.difficulty} difficulty: beginner = recall and recognition, intermediate = application, advanced = analysis or comparing alternatives. Ground the question in the document.`;
 
-  for (let attempt = 0; attempt < 2; attempt++) {
+Each question must assess a different concept or angle of the objective${avoid ? `, and differ from these existing questions:\n${avoid}` : "."}
+Match the ${objective.difficulty} difficulty: beginner = recall and recognition, intermediate = application, advanced = analysis or comparing alternatives. Vary which position holds the correct answer. Ground every question in the document.`;
+
     const response = await anthropic.beta.messages.parse({
       ...baseParams,
       max_tokens: 16000,
-      output_config: { effort: "medium", format: betaZodOutputFormat(QuestionSchema) },
+      output_config: { effort: "medium", format: betaZodOutputFormat(QuestionSetSchema) },
       system: COURSE_DESIGNER_SYSTEM,
       messages: [
         {
@@ -49,24 +59,26 @@ Match the ${objective.difficulty} difficulty: beginner = recall and recognition,
       ],
     });
     assertNotRefused(response);
-    const q = response.parsed_output;
-    // Schema can't express "exactly 4" / index-in-range under strict decoding,
-    // so validate here and regenerate once if the model got it wrong.
-    if (q && q.choices.length === 4 && q.correctIndex >= 0 && q.correctIndex < 4 && q.hints.length >= 1) {
-      return {
-        id: nanoid(10),
-        objectiveId: objective.id,
-        stem: q.stem,
-        choices: q.choices,
-        correctIndex: q.correctIndex,
-        explanation: q.explanation,
-        hints: q.hints,
-        attempts: [],
-        answeredCorrectly: false,
-        hintsShown: 0,
-        createdAt: new Date().toISOString(),
-      };
-    }
+    valid.push(...(response.parsed_output?.questions ?? []).filter(isValid).slice(0, needed));
   }
-  throw new Error("Failed to generate a valid question");
+
+  if (valid.length < count) throw new Error(`Generated ${valid.length}/${count} valid questions`);
+
+  const now = new Date().toISOString();
+  return valid.map((q, order) => ({
+    id: nanoid(10),
+    objectiveId: objective.id,
+    order,
+    stem: q.stem,
+    choices: q.choices,
+    correctIndex: q.correctIndex,
+    explanation: q.explanation,
+    hints: q.hints,
+    attempts: [],
+    answeredCorrectly: false,
+    answeredAt: null,
+    hintsShown: 0,
+    xpAwarded: null,
+    createdAt: now,
+  }));
 }

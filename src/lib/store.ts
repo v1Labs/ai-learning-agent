@@ -25,7 +25,7 @@ export async function saveLesson(lesson: Lesson): Promise<Lesson> {
 export async function getLesson(id: string): Promise<Lesson | null> {
   try {
     const raw = await fs.readFile(path.join(lessonPath(id), "lesson.json"), "utf8");
-    return JSON.parse(raw) as Lesson;
+    return withDefaults(JSON.parse(raw) as Lesson);
   } catch (err) {
     if ((err as NodeJS.ErrnoException).code === "ENOENT") return null;
     throw err;
@@ -65,3 +65,12 @@ export async function withLesson<T>(id: string, fn: (lesson: Lesson) => Promise<
 }
 
 export class NotFoundError extends Error {}
+
+/** Backfills fields added after a lesson file was first written. */
+function withDefaults(lesson: Lesson): Lesson {
+  lesson.allocation ??= [];
+  lesson.generation ??= {};
+  lesson.cards ??= [];
+  lesson.events ??= [];
+  return lesson;
+}

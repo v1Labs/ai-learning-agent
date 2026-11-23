@@ -26,7 +26,8 @@ export const api = {
     json<PublicLesson>(await post(`/api/lessons/${id}/plan`, { action: "revise", feedback })),
   approvePlan: async (id: string, objectiveIds: string[]) =>
     json<PublicLesson>(await post(`/api/lessons/${id}/plan`, { action: "approve", objectiveIds })),
-  nextQuestion: async (id: string) => json<PublicLesson>(await post(`/api/lessons/${id}/question`)),
+  /** Resumes or retries background quiz/card generation (idempotent). */
+  generate: async (id: string) => json<PublicLesson>(await post(`/api/lessons/${id}/generate`)),
   answer: async (id: string, questionId: string, choiceIndex: number) =>
     json<AnswerResult>(await post(`/api/lessons/${id}/answer`, { questionId, choiceIndex })),
   report: async (id: string) => json<PublicLesson>(await post(`/api/lessons/${id}/report`)),
