@@ -61,7 +61,7 @@ export function ProgressReport({ lesson }: { lesson: PublicLesson }) {
             {lesson.cards
               .filter((c) => c.state !== "locked")
               .map((c) => (
-                <DiscoveryCard key={c.id} card={c} />
+                <DiscoveryCard key={c.id} card={c} total={lesson.cards.length} />
               ))}
           </div>
         </div>

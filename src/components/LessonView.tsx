@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { api } from "@/lib/api";
 import type { AnswerResult, PublicLesson, PublicQuestion } from "@/lib/types";
-import { LevelUpModal } from "./LevelUpModal";
+import { CardModal, prefersReducedMotion } from "./CardModal";
 import { PlanReview } from "./PlanReview";
 import { ProgressReport } from "./ProgressReport";
 import { QuestionProgress } from "./QuestionProgress";
@@ -21,8 +21,12 @@ export function LessonView({ initial }: { initial: PublicLesson }) {
   // A just-answered question stays on screen (with its explanation) until the learner clicks Next.
   const [answered, setAnswered] = useState<PublicQuestion | null>(null);
   // Card modal: opened by a level-up, or by clicking a collected card.
-  const [openCardId, setOpenCardId] = useState<string | null>(null);
-  const [levelUp, setLevelUp] = useState<number | null>(null);
+  // Level-up sequence (ADR 0014): `celebrating` starts on the correct answer
+  // (XP bar fills, new card hidden), then the modal opens after a beat.
+  const [celebrating, setCelebrating] = useState<{ level: number; cardId: string | null } | null>(null);
+  const [levelUpOpen, setLevelUpOpen] = useState(false);
+  const [viewCardId, setViewCardId] = useState<string | null>(null);
+  const [justCollectedId, setJustCollectedId] = useState<string | null>(null);
   const [showReport, setShowReport] = useState(initial.phase === "complete");
   const inflight = useRef(false);
 
@@ -59,6 +63,7 @@ export function LessonView({ initial }: { initial: PublicLesson }) {
   }, [initial.id, initial.phase]);
 
   // Poll while we're waiting on background work the learner can see.
+  const openCardId = levelUpOpen ? (celebrating?.cardId ?? null) : viewCardId;
   const openCard = lesson.cards.find((c) => c.id === openCardId);
   const waiting = (!answered && lesson.waitingOn?.status === "pending") || openCard?.state === "researching";
   useEffect(() => {
@@ -70,9 +75,11 @@ export function LessonView({ initial }: { initial: PublicLesson }) {
   function onAnswered(result: AnswerResult) {
     setLesson(result.lesson);
     if (result.correct) setAnswered(result.question);
-    if (result.levelUp) {
-      setLevelUp(result.levelUp.level);
-      setOpenCardId(result.levelUp.cardId);
+    if (result.levelUp?.cardId) {
+      const levelUp = result.levelUp;
+      setCelebrating(levelUp);
+      // Let the green answer and "+XP" land before interrupting.
+      setTimeout(() => setLevelUpOpen(true), prefersReducedMotion() ? 0 : 900);
     }
   }
 
@@ -100,7 +107,13 @@ export function LessonView({ initial }: { initial: PublicLesson }) {
           <main className="mx-auto w-full max-w-3xl px-4 py-8">
             {lesson.phase !== "planning" && lesson.phase !== "awaiting_approval" && (
               <div className="mb-8 space-y-4">
-                <XpBar progress={lesson.progress} cards={lesson.cards} onOpenCard={setOpenCardId} />
+                <XpBar
+                  progress={lesson.progress}
+                  cards={lesson.cards}
+                  onOpenCard={setViewCardId}
+                  celebrating={celebrating}
+                  highlightCardId={justCollectedId}
+                />
                 <QuestionProgress answered={lesson.answeredQuestions} total={lesson.totalQuestions} />
               </div>
             )}
@@ -162,12 +175,20 @@ export function LessonView({ initial }: { initial: PublicLesson }) {
       </div>
 
       {openCard && (
-        <LevelUpModal
+        <CardModal
+          key={openCard.id}
           card={openCard}
-          level={levelUp}
+          total={lesson.cards.length}
+          levelUp={levelUpOpen ? (celebrating?.level ?? null) : null}
           onClose={() => {
-            setOpenCardId(null);
-            setLevelUp(null);
+            if (levelUpOpen) {
+              setJustCollectedId(celebrating?.cardId ?? null);
+              setTimeout(() => setJustCollectedId(null), 700);
+              setCelebrating(null);
+              setLevelUpOpen(false);
+            } else {
+              setViewCardId(null);
+            }
           }}
         />
       )}
