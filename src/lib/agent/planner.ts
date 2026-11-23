@@ -3,7 +3,7 @@ import { z } from "zod";
 import { betaZodOutputFormat } from "@anthropic-ai/sdk/helpers/beta/zod";
 import { nanoid } from "nanoid";
 import { anthropic, assertNotRefused, baseParams, COURSE_DESIGNER_SYSTEM, pdfDocumentBlock } from "../claude";
-import type { LessonPlan } from "../types";
+import type { Lesson, LessonPlan } from "../types";
 
 const PlanSchema = z.object({
   title: z.string().describe("Short lesson title"),
@@ -25,12 +25,11 @@ const PlanSchema = z.object({
  * plan plus the learner's feedback, which is the HITL loop.
  */
 export async function draftPlan(args: {
-  lessonId: string;
-  fileName: string;
+  lesson: Lesson;
   previousPlan?: LessonPlan | null;
   feedback?: string;
 }): Promise<LessonPlan> {
-  const { lessonId, fileName, previousPlan, feedback } = args;
+  const { lesson, previousPlan, feedback } = args;
 
   const instructions = previousPlan
     ? `The learner reviewed this draft lesson plan and asked for changes.
@@ -54,7 +53,7 @@ Produce a revised plan that addresses the feedback while staying grounded in the
     messages: [
       {
         role: "user",
-        content: [await pdfDocumentBlock(lessonId, fileName), { type: "text", text: instructions }],
+        content: [await pdfDocumentBlock(lesson), { type: "text", text: instructions }],
       },
     ],
   });

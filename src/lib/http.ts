@@ -2,12 +2,14 @@ import "server-only";
 import Anthropic from "@anthropic-ai/sdk";
 import { ModelRefusalError } from "./claude";
 import { PhaseError } from "./lesson";
+import { RateLimitError } from "./limits";
 import { NotFoundError } from "./store";
 
 /** Maps domain/SDK errors to HTTP responses so route handlers stay thin. */
 export function errorResponse(err: unknown): Response {
   if (err instanceof NotFoundError) return Response.json({ error: err.message }, { status: 404 });
   if (err instanceof PhaseError) return Response.json({ error: err.message }, { status: 409 });
+  if (err instanceof RateLimitError) return Response.json({ error: err.message }, { status: 429 });
   if (err instanceof ModelRefusalError) return Response.json({ error: err.message }, { status: 422 });
   if (err instanceof Anthropic.RateLimitError)
     return Response.json({ error: "The AI service is busy. Please retry in a moment." }, { status: 429 });

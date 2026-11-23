@@ -37,7 +37,7 @@ Base strengths and areas to review on the stats. Make study tips specific to the
     messages: [
       {
         role: "user",
-        content: [await pdfDocumentBlock(lesson.id, lesson.fileName), { type: "text", text: instructions }],
+        content: [await pdfDocumentBlock(lesson), { type: "text", text: instructions }],
       },
     ],
   });

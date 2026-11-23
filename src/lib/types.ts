@@ -98,6 +98,8 @@ export interface LessonEvent {
 export interface Lesson {
   id: string;
   fileName: string;
+  /** Private Vercel Blob URL of the source PDF when deployed; null locally (ADR 0019). */
+  pdfUrl: string | null;
   phase: LessonPhase;
   plan: LessonPlan | null;
   /** Number of times the learner asked for the plan to be revised. */

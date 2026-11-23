@@ -1,4 +1,5 @@
 // Thin typed client for the lesson API (browser side).
+import { upload } from "@vercel/blob/client";
 import type { AnswerResult, PublicLesson } from "./types";
 
 async function json<T>(res: Response): Promise<T> {
@@ -15,10 +16,24 @@ const post = (url: string, body?: unknown) =>
   });
 
 export const api = {
-  async upload(file: File) {
-    const fd = new FormData();
-    fd.append("file", file);
-    return json<{ id: string }>(await fetch("/api/lessons", { method: "POST", body: fd }));
+  /**
+   * Deployed: upload straight to private Vercel Blob (no function body-size
+   * limit), then register it. Local: plain multipart upload (ADR 0019).
+   */
+  async upload(file: File, opts: { blob: boolean; onProgress?: (pct: number) => void }) {
+    if (!opts.blob) {
+      const fd = new FormData();
+      fd.append("file", file);
+      return json<{ id: string }>(await fetch("/api/lessons", { method: "POST", body: fd }));
+    }
+    const blob = await upload(file.name, file, {
+      access: "private",
+      handleUploadUrl: "/api/upload",
+      contentType: "application/pdf",
+      multipart: file.size > 5 * 1024 * 1024,
+      onUploadProgress: (e) => opts.onProgress?.(Math.round(e.percentage)),
+    });
+    return json<{ id: string }>(await post("/api/lessons", { blobUrl: blob.url, fileName: file.name }));
   },
   get: async (id: string) => json<PublicLesson>(await fetch(`/api/lessons/${id}`, { cache: "no-store" })),
   draftPlan: async (id: string) => json<PublicLesson>(await post(`/api/lessons/${id}/plan`, { action: "draft" })),

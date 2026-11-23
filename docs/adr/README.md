@@ -19,7 +19,7 @@ Lightweight ADRs ([Nygard format](https://cognitect.com/blog/2011/11/15/document
 | [0003](0003-server-owned-lesson-state-machine.md) | Server-owned lesson state machine | Accepted |
 | [0004](0004-answer-keys-never-leave-the-server.md) | Answer keys never leave the server; deterministic grading | Accepted |
 | [0005](0005-native-pdf-input-with-prompt-caching.md) | Send the PDF to Claude natively, with prompt caching | Accepted |
-| [0006](0006-file-backed-persistence.md) | File-backed persistence for the prototype | Accepted |
+| [0006](0006-file-backed-persistence.md) | File-backed persistence for the prototype | Superseded by 0019 (deployed); local dev |
 | [0007](0007-xp-and-levels.md) | Gamify with XP and levels, tuned for 10-question completion | Accepted |
 | [0008](0008-discovery-cards-as-level-up-rewards.md) | Discovery cards from web research as level-up rewards | Accepted |
 | [0009](0009-generate-quiz-up-front-in-background.md) | Generate the whole quiz up front, in the background | Accepted |
@@ -32,3 +32,5 @@ Lightweight ADRs ([Nygard format](https://cognitect.com/blog/2011/11/15/document
 | [0016](0016-sage-encouragement-messages.md) | Sage sends short encouragement at key moments, triggered by game events | Proposed |
 | [0017](0017-unit-tests-and-ci.md) | Unit-test the deterministic core with Vitest; run checks in CI | Accepted |
 | [0018](0018-model-evals.md) | Evaluate the riskiest model behaviours with an on-demand eval harness | Accepted |
+| [0019](0019-deploy-on-vercel-with-redis-and-blob.md) | Deploy on Vercel with Upstash Redis and private Vercel Blob | Accepted |
+| [0020](0020-protect-api-spend-on-shared-deployments.md) | Protect API spend on shared deployments: access code, rate limits, spend cap | Accepted |

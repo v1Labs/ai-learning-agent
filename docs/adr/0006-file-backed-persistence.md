@@ -1,6 +1,6 @@
 # 0006. File-backed persistence for the prototype
 
-- **Status:** Accepted
+- **Status:** Superseded by [0019](0019-deploy-on-vercel-with-redis-and-blob.md) for deployed environments (still the local-development backend)
 - **Date:** 2026-11-20 (recorded 2026-11-23)
 
 ## Context

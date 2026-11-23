@@ -20,7 +20,7 @@ beforeAll(async () => {
 
 it("answer keys agree with an independent solver", async () => {
   const { anthropic, baseParams, pdfDocumentBlock } = await import("@/lib/claude");
-  const pdf = await pdfDocumentBlock(lesson.id, lesson.fileName);
+  const pdf = await pdfDocumentBlock(lesson);
 
   const results = await Promise.all(
     lesson.questions.map(async (q) => {

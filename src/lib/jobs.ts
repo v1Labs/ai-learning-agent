@@ -1,25 +1,17 @@
 import "server-only";
 import { writeCard } from "./agent/cardwriter";
 import { generateQuestions } from "./agent/quizmaster";
-import { getLesson, saveLesson, withLesson } from "./store";
+import { getLesson, runOnce, saveLesson, withLesson } from "./store";
 
 // Background generation (ADR 0009). After approval, every objective's
 // questions are generated in parallel, then each objective's discovery card.
 // Model calls run outside the lesson lock; results are merged in under it.
-// Idempotent: re-running skips finished work and anything already in flight,
-// so it also resumes after a server restart.
+// Idempotent: re-running skips finished work, and a lease (Redis when
+// deployed) skips work already in flight on any instance (ADR 0019).
 
-const inflight = new Set<string>();
-
-async function once(key: string, fn: () => Promise<void>) {
-  if (inflight.has(key)) return;
-  inflight.add(key);
-  try {
-    await fn();
-  } finally {
-    inflight.delete(key);
-  }
-}
+// Longer than the slowest job (card research has a 90s timeout plus fallback).
+const JOB_LEASE_MS = 4 * 60_000;
+const once = (key: string, fn: () => Promise<void>) => runOnce(key, JOB_LEASE_MS, fn);
 
 export async function generateLessonContent(lessonId: string) {
   const lesson = await getLesson(lessonId);

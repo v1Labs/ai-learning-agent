@@ -96,7 +96,7 @@ export function LessonView({ initial }: { initial: PublicLesson }) {
     // and the tutor fills exactly the remaining height. Mobile: normal page flow.
     <div className="flex min-h-dvh flex-col lg:h-dvh lg:overflow-hidden">
       <header className="flex h-14 shrink-0 items-center justify-between border-b border-zinc-200 px-4 dark:border-zinc-800">
-        <Link href="/" className="text-sm font-semibold text-indigo-600 dark:text-indigo-400">
+        <Link href="/" className="shrink-0 whitespace-nowrap text-sm font-semibold text-indigo-600 dark:text-indigo-400">
           AI Learning Agent
         </Link>
         <span className="truncate pl-4 text-sm text-zinc-500">{lesson.plan?.title ?? lesson.fileName}</span>

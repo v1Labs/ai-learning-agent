@@ -4,12 +4,13 @@ import { useRouter } from "next/navigation";
 import { useRef, useState } from "react";
 import { api } from "@/lib/api";
 
-export function UploadForm() {
+export function UploadForm({ blobUploads }: { blobUploads: boolean }) {
   const router = useRouter();
   const inputRef = useRef<HTMLInputElement>(null);
   const [file, setFile] = useState<File | null>(null);
   const [dragging, setDragging] = useState(false);
   const [busy, setBusy] = useState(false);
+  const [progress, setProgress] = useState<number | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   function pick(f: File | undefined) {
@@ -27,11 +28,12 @@ export function UploadForm() {
     setBusy(true);
     setError(null);
     try {
-      const { id } = await api.upload(file);
+      const { id } = await api.upload(file, { blob: blobUploads, onProgress: setProgress });
       router.push(`/lesson/${id}`);
     } catch (e) {
       setError((e as Error).message);
       setBusy(false);
+      setProgress(null);
     }
   }
 
@@ -75,7 +77,7 @@ export function UploadForm() {
         onClick={start}
         className="w-full rounded-xl bg-indigo-600 px-4 py-3 font-medium text-white transition hover:bg-indigo-500 disabled:cursor-not-allowed disabled:opacity-50"
       >
-        {busy ? "Uploading…" : "Build my lesson"}
+        {busy ? (progress !== null && progress < 100 ? `Uploading… ${progress}%` : "Uploading…") : "Build my lesson"}
       </button>
     </div>
   );

@@ -7,6 +7,7 @@ export function makeLesson(difficulties: Difficulty[] = ["beginner", "intermedia
   return {
     id: "test-lesson",
     fileName: "test.pdf",
+    pdfUrl: null,
     phase: "awaiting_approval",
     plan: {
       title: "Test lesson",

@@ -4,7 +4,8 @@ import { errorResponse } from "@/lib/http";
 import { assertPhase, computeStats, toPublicLesson } from "@/lib/lesson";
 import { saveLesson, withLesson } from "@/lib/store";
 
-export const maxDuration = 120;
+// Writes the report with a model call; allow time on Vercel (ADR 0019).
+export const maxDuration = 300;
 
 /** Generates (once) and returns the end-of-lesson progress report. */
 export async function POST(_req: NextRequest, ctx: RouteContext<"/api/lessons/[id]/report">) {

@@ -1,6 +1,6 @@
 import "server-only";
 import Anthropic from "@anthropic-ai/sdk";
-import { getPdfBase64 } from "./store";
+import { getPdfBase64, type PdfRef } from "./store";
 
 // Credentials resolve from ANTHROPIC_API_KEY (or an `ant auth login` profile).
 export const anthropic = new Anthropic();
@@ -41,13 +41,12 @@ export const COURSE_DESIGNER_SYSTEM = `You are an expert instructional designer 
  * is billed at full price once per lesson and read from cache afterwards.
  */
 export async function pdfDocumentBlock(
-  lessonId: string,
-  title: string,
+  lesson: PdfRef & { fileName: string },
 ): Promise<Anthropic.Beta.BetaRequestDocumentBlock> {
   return {
     type: "document",
-    source: { type: "base64", media_type: "application/pdf", data: await getPdfBase64(lessonId) },
-    title,
+    source: { type: "base64", media_type: "application/pdf", data: await getPdfBase64(lesson) },
+    title: lesson.fileName,
     cache_control: { type: "ephemeral" },
   };
 }

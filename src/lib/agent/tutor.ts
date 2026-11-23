@@ -75,7 +75,7 @@ export async function runTutorTurn(lesson: Lesson, userMessage: string, onText: 
     {
       role: "user",
       content: [
-        await pdfDocumentBlock(lesson.id, lesson.fileName),
+        await pdfDocumentBlock(lesson),
         { type: "text", text: "This is the source document for my lesson." },
       ],
     },

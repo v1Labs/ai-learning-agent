@@ -54,7 +54,7 @@ Match the ${objective.difficulty} difficulty: beginner = recall and recognition,
       messages: [
         {
           role: "user",
-          content: [await pdfDocumentBlock(lesson.id, lesson.fileName), { type: "text", text: instructions }],
+          content: [await pdfDocumentBlock(lesson), { type: "text", text: instructions }],
         },
       ],
     });

@@ -6,7 +6,8 @@ import { generateLessonContent } from "@/lib/jobs";
 import { assertPhase, startLearning, toPublicLesson } from "@/lib/lesson";
 import { saveLesson, withLesson } from "@/lib/store";
 
-export const maxDuration = 120;
+// Model calls, plus background generation via after() on approval (ADR 0019).
+export const maxDuration = 300;
 
 const Body = z.discriminatedUnion("action", [
   z.object({ action: z.literal("draft") }),
@@ -34,15 +35,14 @@ export async function POST(req: NextRequest, ctx: RouteContext<"/api/lessons/[id
         case "draft": {
           if (lesson.plan) return lesson; // already drafted (e.g. page refresh)
           assertPhase(lesson, "planning");
-          lesson.plan = await draftPlan({ lessonId: lesson.id, fileName: lesson.fileName });
+          lesson.plan = await draftPlan({ lesson });
           lesson.phase = "awaiting_approval";
           break;
         }
         case "revise": {
           assertPhase(lesson, "awaiting_approval");
           lesson.plan = await draftPlan({
-            lessonId: lesson.id,
-            fileName: lesson.fileName,
+            lesson,
             previousPlan: lesson.plan,
             feedback: body.feedback,
           });

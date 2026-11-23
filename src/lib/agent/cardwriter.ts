@@ -130,7 +130,7 @@ async function pdfCard(lesson: Lesson, objective: Objective, kind: CardKind, avo
       {
         role: "user",
         content: [
-          await pdfDocumentBlock(lesson.id, lesson.fileName),
+          await pdfDocumentBlock(lesson),
           {
             type: "text",
             text: `Write a "discovery card" reward for a learner who just completed the objective "${objective.title}". Pick the most surprising detail from the document that fits this angle: ${KIND_BRIEF[kind]}.\n\nDo not use facts that would help answer these quiz questions:\n${avoid.map((s) => `- ${s}`).join("\n") || "(none)"}`,

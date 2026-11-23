@@ -4,7 +4,8 @@ import { runTutorTurn } from "@/lib/agent/tutor";
 import { errorResponse } from "@/lib/http";
 import { getLesson, NotFoundError, saveLesson, withLesson } from "@/lib/store";
 
-export const maxDuration = 120;
+// Streams a tutor turn (model call plus tool loop); allow time on Vercel (ADR 0019).
+export const maxDuration = 300;
 
 const Body = z.object({ message: z.string().min(1).max(4000) });
 

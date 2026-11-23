@@ -10,6 +10,22 @@ npm install
 npm run dev                  # http://localhost:3000
 ```
 
+## Deploying to Vercel
+
+Local development needs only `ANTHROPIC_API_KEY`. A shared deployment also needs storage and spend protection (ADRs 0019, 0020):
+
+1. **Import the repo** into Vercel (framework preset: Next.js).
+2. **Add storage** from the project's *Storage* tab:
+   - **Upstash Redis** (Marketplace): sets `KV_REST_API_URL` / `KV_REST_API_TOKEN`. Lessons, locks and rate-limit counters live here.
+   - **Vercel Blob**: sets `BLOB_READ_WRITE_TOKEN`. PDFs upload straight from the browser as private blobs.
+3. **Set environment variables** (*Settings → Environment Variables*). Never commit these:
+   - `ANTHROPIC_API_KEY`: ideally a key from a dedicated Console workspace.
+   - `ACCESS_CODE`: the shared code your team will enter.
+4. **Set a monthly spend limit** on that key's workspace in the Anthropic Console: the backstop if the link leaks.
+5. **Deploy**, then run one full lesson end to end to exercise Redis and Blob.
+
+Routes that call the model use `maxDuration = 300`, so the plan must allow 300s functions (Fluid compute). Background quiz and card generation normally finishes in about 45s.
+
 ## Testing
 
 ```bash
@@ -75,7 +91,9 @@ src/
     lesson.ts                    state machine, grading, stats
     gamification.ts              XP rules and levels
     jobs.ts                      background quiz + card generation
-    store.ts                     file-backed persistence + per-lesson lock
+    store.ts                     persistence: files locally, Redis + Blob when deployed; locks, leases, counters
+    limits.ts                    upload caps and rate limits
+    access.ts                    shared access-code helpers (gate in src/proxy.ts)
     claude.ts                    client, shared params, PDF block
     agent/                       planner, quizmaster, cardwriter, tutor, reporter
 scripts/simulate-xp.py           evidence for the level thresholds (ADR 0007)
@@ -84,10 +102,10 @@ docs/adr/                        architecture decision records
 
 ## Known limitations / next steps
 
-- File-based store and an in-process lock: fine for a single-instance demo. Swap `store.ts` for Postgres/Redis to scale out.
+- Storage is a file store locally and Upstash Redis + private Vercel Blob when deployed (ADR 0019). Postgres is the long-term home (ADR 0015).
 - The first question waits for its objective's generation call (~20s after approval). Objective 1 could be generated first or at lower effort.
 - Uploads are capped at 100 pages (`MAX_PDF_PAGES`); whole books must be split into chapters first. ADR 0012 proposes automatic sectioning for large books.
-- No auth; lesson IDs are unguessable but not access-controlled. ADR 0015 proposes profiles, a dashboard and lifetime XP and cards.
+- No per-user auth: a shared access code gates the deployment (ADR 0020), and lesson IDs are unguessable. ADR 0015 proposes profiles, a dashboard and lifetime XP and cards.
 - An output-side guard on tutor replies (e.g. a cheap classifier checking for answer disclosure) would add defence in depth.
 - Adaptive difficulty (step up or down based on first-try accuracy) and spaced-repetition review of missed concepts.
 - Evals cover answer keys and tutor leakage; card spoilers and plan quality would follow the same pattern.

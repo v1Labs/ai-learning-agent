@@ -4,6 +4,9 @@ import { generateLessonContent } from "@/lib/jobs";
 import { assertPhase, toPublicLesson } from "@/lib/lesson";
 import { getLesson, NotFoundError } from "@/lib/store";
 
+// after() work (quiz + cards, ~45s typical) counts toward this limit on Vercel (ADR 0019).
+export const maxDuration = 300;
+
 /**
  * Ensures background generation is running for anything not finished yet:
  * resumes after a server restart and retries failed objectives or cards.

@@ -26,8 +26,9 @@ export async function buildLesson(pdfPath: string) {
   const lesson: Lesson = {
     id,
     fileName: path.basename(pdfPath),
+    pdfUrl: null,
     phase: "awaiting_approval",
-    plan: await draftPlan({ lessonId: id, fileName: path.basename(pdfPath) }),
+    plan: null,
     planRevisions: 0,
     allocation: [],
     generation: {},
@@ -39,6 +40,7 @@ export async function buildLesson(pdfPath: string) {
     createdAt: now,
     updatedAt: now,
   };
+  lesson.plan = await draftPlan({ lesson });
   startLearning(lesson);
   const sets = await Promise.all(
     lesson.allocation.map(({ objectiveId, count }) =>
