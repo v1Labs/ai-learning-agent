@@ -1,10 +1,11 @@
 // Thin typed client for the lesson API (browser side).
 import { upload } from "@vercel/blob/client";
+import { describeHttpError, preflightUpload } from "./errors";
 import type { AnswerResult, PublicLesson } from "./types";
 
 async function json<T>(res: Response): Promise<T> {
-  const data = await res.json().catch(() => ({}));
-  if (!res.ok) throw new Error((data as { error?: string }).error ?? `Request failed (${res.status})`);
+  const data = await res.json().catch(() => null);
+  if (!res.ok) throw new Error(describeHttpError(res.status, data));
   return data as T;
 }
 
@@ -19,9 +20,14 @@ export const api = {
   /**
    * Deployed: upload straight to private Vercel Blob (no function body-size
    * limit), then register it. Local: plain multipart upload (ADR 0019).
+   * The mode is asked of the server at upload time, so connecting storage
+   * never requires a rebuild.
    */
-  async upload(file: File, opts: { blob: boolean; onProgress?: (pct: number) => void }) {
-    if (!opts.blob) {
+  async upload(file: File, opts: { onProgress?: (pct: number) => void } = {}) {
+    const { blobUploads } = await json<{ blobUploads: boolean }>(await fetch("/api/upload", { cache: "no-store" }));
+    const problem = preflightUpload(file, blobUploads);
+    if (problem) throw new Error(problem);
+    if (!blobUploads) {
       const fd = new FormData();
       fd.append("file", file);
       return json<{ id: string }>(await fetch("/api/lessons", { method: "POST", body: fd }));

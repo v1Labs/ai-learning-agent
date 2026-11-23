@@ -1,6 +1,12 @@
 import { handleUpload, type HandleUploadBody } from "@vercel/blob/client";
 import { errorResponse } from "@/lib/http";
 import { MAX_PDF_BYTES } from "@/lib/limits";
+import { usesBlob } from "@/lib/store";
+
+/** Tells the client, at upload time, whether to upload straight to Blob. */
+export async function GET() {
+  return Response.json({ blobUploads: usesBlob }, { headers: { "Cache-Control": "no-store" } });
+}
 
 /**
  * Issues short-lived tokens for direct browser-to-Blob uploads (ADR 0019).

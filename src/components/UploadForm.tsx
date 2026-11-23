@@ -3,8 +3,9 @@
 import { useRouter } from "next/navigation";
 import { useRef, useState } from "react";
 import { api } from "@/lib/api";
+import { preflightUpload } from "@/lib/errors";
 
-export function UploadForm({ blobUploads }: { blobUploads: boolean }) {
+export function UploadForm() {
   const router = useRouter();
   const inputRef = useRef<HTMLInputElement>(null);
   const [file, setFile] = useState<File | null>(null);
@@ -16,8 +17,10 @@ export function UploadForm({ blobUploads }: { blobUploads: boolean }) {
   function pick(f: File | undefined) {
     setError(null);
     if (!f) return;
-    if (f.type !== "application/pdf" && !f.name.toLowerCase().endsWith(".pdf")) {
-      setError("Please choose a PDF file.");
+    // Type and size checks right away; the storage check happens at upload time.
+    const problem = preflightUpload(f, true);
+    if (problem) {
+      setError(problem);
       return;
     }
     setFile(f);
@@ -28,7 +31,7 @@ export function UploadForm({ blobUploads }: { blobUploads: boolean }) {
     setBusy(true);
     setError(null);
     try {
-      const { id } = await api.upload(file, { blob: blobUploads, onProgress: setProgress });
+      const { id } = await api.upload(file, { onProgress: setProgress });
       router.push(`/lesson/${id}`);
     } catch (e) {
       setError((e as Error).message);

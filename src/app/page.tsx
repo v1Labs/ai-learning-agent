@@ -10,7 +10,7 @@ export default function Home() {
         finishes with a progress report and study tips.
       </p>
       <div className="mt-10">
-        <UploadForm blobUploads={!!process.env.BLOB_READ_WRITE_TOKEN} />
+        <UploadForm />
       </div>
     </main>
   );
