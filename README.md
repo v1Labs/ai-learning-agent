@@ -10,6 +10,16 @@ npm install
 npm run dev                  # http://localhost:3000
 ```
 
+## Testing
+
+```bash
+npm test             # unit tests (no API calls, ~100ms)
+npm run typecheck
+EVAL_PDF=./chapter.pdf npm run eval   # model evals: answer-key validity + tutor leakage (billed)
+```
+
+Unit tests cover grading, the answer-key projection, XP/levels and card scheduling (ADR 0017). CI runs lint, typecheck, tests and a build on every push. The evals check the two riskiest model behaviours against a real PDF and run on demand (ADR 0018).
+
 ## Flow
 
 | Phase | What happens | Endpoint |
@@ -80,4 +90,4 @@ docs/adr/                        architecture decision records
 - No auth; lesson IDs are unguessable but not access-controlled. ADR 0015 proposes profiles, a dashboard and lifetime XP and cards.
 - An output-side guard on tutor replies (e.g. a cheap classifier checking for answer disclosure) would add defence in depth.
 - Adaptive difficulty (step up or down based on first-try accuracy) and spaced-repetition review of missed concepts.
-- Evals: a small set of PDFs plus rubric-graded checks on plan quality, question validity, tutor answer leakage, and discovery cards spoiling questions.
+- Evals cover answer keys and tutor leakage; card spoilers and plan quality would follow the same pattern.

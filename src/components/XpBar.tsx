@@ -1,7 +1,9 @@
 import type { PublicCard, XpProgress } from "@/lib/types";
+import { XP_LEVELS } from "@/lib/gamification";
 import { KIND_LABEL } from "./DiscoveryCard";
 
-const LEVEL_XP = [0, 25, 70]; // keep in sync with XP_LEVELS (src/lib/gamification.ts)
+/** XP at which each level starts (level 0 starts at 0). */
+const LEVEL_XP = [0, ...XP_LEVELS.map((l) => l.xp)];
 
 /**
  * XP score, progress to the next card, and the card collection.

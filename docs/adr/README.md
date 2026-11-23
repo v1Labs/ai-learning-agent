@@ -30,3 +30,5 @@ Lightweight ADRs ([Nygard format](https://cognitect.com/blog/2011/11/15/document
 | [0014](0014-staged-level-up-sequence-and-card-design.md) | Stage the level-up as one continuous sequence; redesign cards | Accepted |
 | [0015](0015-learner-dashboard-and-persistent-profile.md) | Learner dashboard with a persistent profile: documents, stats, lifetime XP and cards | Proposed |
 | [0016](0016-sage-encouragement-messages.md) | Sage sends short encouragement at key moments, triggered by game events | Proposed |
+| [0017](0017-unit-tests-and-ci.md) | Unit-test the deterministic core with Vitest; run checks in CI | Accepted |
+| [0018](0018-model-evals.md) | Evaluate the riskiest model behaviours with an on-demand eval harness | Accepted |
