@@ -7,3 +7,7 @@ This version has breaking changes — APIs, conventions, and file structure may 
 This block is written and re-added by `next dev` — verify at `node_modules/next/dist/server/lib/generate-agent-files.js`. Removing it from a diff only re-creates the uncommitted change; committing it with your work keeps the tree clean.
 
 <!-- END:nextjs-agent-rules -->
+
+## Architecture decisions
+
+Significant design decisions are recorded as lightweight ADRs in `docs/adr/` (see `docs/adr/README.md` for conventions). When a change makes a decision with a real alternative or tradeoff, add an ADR from `docs/adr/template.md` in the same commit and update the index. Don't edit an accepted ADR's decision; supersede it with a new one.
