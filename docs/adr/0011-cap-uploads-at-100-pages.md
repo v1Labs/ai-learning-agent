@@ -19,5 +19,5 @@ Alternatives considered: accept up to 600 pages (slow, expensive planning for co
 ## Consequences
 
 - Oversized uploads fail immediately with an actionable message instead of a confusing error after a wait.
-- Learners with a whole book must split it themselves. A "pick a chapter" step is the natural follow-up if that's common.
+- Learners with a whole book must split it themselves. A "pick a chapter" step is the natural follow-up if that's common. Proposed design: [0012](0012-process-large-pdfs-in-sections.md).
 - Adds a small dependency (`pdf-lib`).
