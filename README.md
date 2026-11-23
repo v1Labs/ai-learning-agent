@@ -104,6 +104,7 @@ docs/adr/                        architecture decision records
 
 - Storage is a file store locally and Upstash Redis + private Vercel Blob when deployed (ADR 0019). Postgres is the long-term home (ADR 0015).
 - The first question waits for its objective's generation call (~20s after approval). Objective 1 could be generated first or at lower effort.
+- The raw PDF is sent to Claude on every call (cached). ADR 0021 proposes extracting text locally to cut input tokens at scale, gated on a cost and quality comparison.
 - Uploads are capped at 100 pages (`MAX_PDF_PAGES`); whole books must be split into chapters first. ADR 0012 proposes automatic sectioning for large books.
 - No per-user auth: a shared access code gates the deployment (ADR 0020), and lesson IDs are unguessable. ADR 0015 proposes profiles, a dashboard and lifetime XP and cards.
 - An output-side guard on tutor replies (e.g. a cheap classifier checking for answer disclosure) would add defence in depth.
