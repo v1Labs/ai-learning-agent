@@ -17,12 +17,12 @@ Local development needs only `ANTHROPIC_API_KEY`. A shared deployment also needs
 1. **Import the repo** into Vercel (framework preset: Next.js).
 2. **Add storage** from the project's *Storage* tab:
    - **Upstash Redis** (Marketplace): sets `KV_REST_API_URL` / `KV_REST_API_TOKEN`. Lessons, locks and rate-limit counters live here.
-   - **Vercel Blob**: sets `BLOB_READ_WRITE_TOKEN`. PDFs upload straight from the browser as private blobs.
+   - **Vercel Blob**: newer stores set `BLOB_STORE_ID` (authenticated via Vercel OIDC automatically); older ones set `BLOB_READ_WRITE_TOKEN`. Either works. PDFs upload straight from the browser as private blobs.
 3. **Set environment variables** (*Settings → Environment Variables*). Never commit these:
    - `ANTHROPIC_API_KEY`: ideally a key from a dedicated Console workspace.
    - `ACCESS_CODE`: the shared code your team will enter.
 4. **Set a monthly spend limit** on that key's workspace in the Anthropic Console: the backstop if the link leaks.
-5. **Deploy**, then run one full lesson end to end to exercise Redis and Blob.
+5. **Deploy**, then open `/api/health`. It should report `"storage": "redis"` and a `blob` mode with `"ok": true`. Then run one full lesson end to end.
 
 Routes that call the model use `maxDuration = 300`, so the plan must allow 300s functions (Fluid compute). Background quiz and card generation normally finishes in about 45s.
 

@@ -31,4 +31,5 @@ Alternatives considered:
 - The Redis backend is exercised only once deployed. Its logic is small (get/set, NX locks, counters), but the first deploy should include a full lesson run.
 - Lock contention during plan drafting (up to ~60s) is handled by polling with backoff. Fine at demo scale, not for high concurrency.
 - The 300s limit must be allowed by the Vercel plan (Fluid compute). Generation normally finishes well within it, and `/generate` resumes anything cut off.
+- **Update (same day):** newer Blob stores authenticate with Vercel OIDC (`BLOB_STORE_ID`, no read-write token). Reads and deletes work unchanged, but browser uploads need presigned URLs (`handleUploadPresigned` / `uploadPresigned`) instead of client tokens. `/api/upload` supports both, and `/api/health` reports which storage and Blob mode a deployment is using.
 - Gotcha found while testing: with a proxy present, Next buffers request bodies and silently truncates past 10 MB, which broke local uploads. `experimental.proxyClientMaxBodySize` is raised to 25 MB.

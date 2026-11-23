@@ -127,8 +127,20 @@ function redisBackend(redis: Redis): Backend {
 }
 
 const hasRedis = !!(process.env.UPSTASH_REDIS_REST_URL || process.env.KV_REST_API_URL);
+export const storageBackend: "redis" | "file" = hasRedis ? "redis" : "file";
+/**
+ * How Vercel Blob is authenticated, if at all. Older stores provide a
+ * read-write token; newer ones use Vercel OIDC (BLOB_STORE_ID + a runtime OIDC
+ * token, which the SDK picks up automatically). Browser uploads differ between
+ * the two (client tokens vs presigned URLs), reads and deletes don't.
+ */
+export const blobMode: "token" | "oidc" | null = process.env.BLOB_READ_WRITE_TOKEN
+  ? "token"
+  : process.env.BLOB_STORE_ID
+    ? "oidc"
+    : null;
 /** True when PDFs should go to Vercel Blob (uploaded directly from the browser). */
-export const usesBlob = !!process.env.BLOB_READ_WRITE_TOKEN;
+export const usesBlob = blobMode !== null;
 const backend: Backend = hasRedis ? redisBackend(Redis.fromEnv()) : fileBackend();
 
 // ---------------- Public API ----------------

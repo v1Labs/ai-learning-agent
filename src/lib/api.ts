@@ -1,5 +1,5 @@
 // Thin typed client for the lesson API (browser side).
-import { upload } from "@vercel/blob/client";
+import { upload, uploadPresigned } from "@vercel/blob/client";
 import { describeHttpError, preflightUpload } from "./errors";
 import type { AnswerResult, PublicLesson } from "./types";
 
@@ -24,7 +24,9 @@ export const api = {
    * never requires a rebuild.
    */
   async upload(file: File, opts: { onProgress?: (pct: number) => void } = {}) {
-    const { blobUploads } = await json<{ blobUploads: boolean }>(await fetch("/api/upload", { cache: "no-store" }));
+    const { blobUploads, blobMode } = await json<{ blobUploads: boolean; blobMode: "token" | "oidc" | null }>(
+      await fetch("/api/upload", { cache: "no-store" }),
+    );
     const problem = preflightUpload(file, blobUploads);
     if (problem) throw new Error(problem);
     if (!blobUploads) {
@@ -32,7 +34,9 @@ export const api = {
       fd.append("file", file);
       return json<{ id: string }>(await fetch("/api/lessons", { method: "POST", body: fd }));
     }
-    const blob = await upload(file.name, file, {
+    // OIDC-authenticated stores use presigned URLs; token stores use client tokens.
+    const uploadFn = blobMode === "oidc" ? uploadPresigned : upload;
+    const blob = await uploadFn(file.name, file, {
       access: "private",
       handleUploadUrl: "/api/upload",
       contentType: "application/pdf",
