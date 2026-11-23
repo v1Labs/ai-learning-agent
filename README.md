@@ -77,7 +77,7 @@ docs/adr/                        architecture decision records
 - File-based store and an in-process lock: fine for a single-instance demo. Swap `store.ts` for Postgres/Redis to scale out.
 - The first question waits for its objective's generation call (~20s after approval). Objective 1 could be generated first or at lower effort.
 - Uploads are capped at 100 pages (`MAX_PDF_PAGES`); whole books must be split into chapters first. ADR 0012 proposes automatic sectioning for large books.
-- No auth; lesson IDs are unguessable but not access-controlled.
+- No auth; lesson IDs are unguessable but not access-controlled. ADR 0015 proposes profiles, a dashboard and lifetime XP and cards.
 - An output-side guard on tutor replies (e.g. a cheap classifier checking for answer disclosure) would add defence in depth.
 - Adaptive difficulty (step up or down based on first-try accuracy) and spaced-repetition review of missed concepts.
 - Evals: a small set of PDFs plus rubric-graded checks on plan quality, question validity, tutor answer leakage, and discovery cards spoiling questions.

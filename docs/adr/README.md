@@ -28,3 +28,4 @@ Lightweight ADRs ([Nygard format](https://cognitect.com/blog/2011/11/15/document
 | [0012](0012-process-large-pdfs-in-sections.md) | Process large PDFs as a table of contents plus ≤100-page sections | Proposed |
 | [0013](0013-tutor-persona.md) | Give the tutor a persona: "Sage", a study-buddy owl | Accepted |
 | [0014](0014-staged-level-up-sequence-and-card-design.md) | Stage the level-up as one continuous sequence; redesign cards | Accepted |
+| [0015](0015-learner-dashboard-and-persistent-profile.md) | Learner dashboard with a persistent profile: documents, stats, lifetime XP and cards | Proposed |
