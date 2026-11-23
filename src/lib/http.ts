@@ -13,6 +13,11 @@ export function errorResponse(err: unknown): Response {
     return Response.json({ error: "The AI service is busy. Please retry in a moment." }, { status: 429 });
   if (err instanceof Anthropic.AuthenticationError)
     return Response.json({ error: "Server is missing a valid ANTHROPIC_API_KEY." }, { status: 500 });
+  if (err instanceof Anthropic.BadRequestError) {
+    // Usually a problem with the document itself (too large, unreadable); show the reason.
+    const detail = (err.error as { error?: { message?: string } } | undefined)?.error?.message;
+    return Response.json({ error: `The AI service rejected this request${detail ? `: ${detail}` : "."}` }, { status: 422 });
+  }
   if (err instanceof Anthropic.APIError)
     return Response.json({ error: `AI service error (${err.status})` }, { status: 502 });
   console.error(err);

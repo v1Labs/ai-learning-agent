@@ -24,3 +24,4 @@ Lightweight ADRs ([Nygard format](https://cognitect.com/blog/2011/11/15/document
 | [0008](0008-discovery-cards-as-level-up-rewards.md) | Discovery cards from web research as level-up rewards | Accepted |
 | [0009](0009-generate-quiz-up-front-in-background.md) | Generate the whole quiz up front, in the background | Accepted |
 | [0010](0010-discovery-card-scheduling-and-research.md) | Schedule each card's topic at approval; research in two steps | Accepted |
+| [0011](0011-cap-uploads-at-100-pages.md) | Cap uploads at 100 pages, checked at upload | Accepted |
