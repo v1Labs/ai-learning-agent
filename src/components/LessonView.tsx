@@ -85,74 +85,78 @@ export function LessonView({ initial }: { initial: PublicLesson }) {
   const inQuiz = lesson.phase === "learning" || (lesson.phase === "complete" && !showReport);
 
   return (
-    <div className="flex min-h-screen flex-col">
-      <header className="flex items-center justify-between border-b border-zinc-200 px-4 py-3 dark:border-zinc-800">
+    // Desktop: an app shell. The header stays put, the lesson column scrolls on its own,
+    // and the tutor fills exactly the remaining height. Mobile: normal page flow.
+    <div className="flex min-h-dvh flex-col lg:h-dvh lg:overflow-hidden">
+      <header className="flex h-14 shrink-0 items-center justify-between border-b border-zinc-200 px-4 dark:border-zinc-800">
         <Link href="/" className="text-sm font-semibold text-indigo-600 dark:text-indigo-400">
           AI Learning Agent
         </Link>
         <span className="truncate pl-4 text-sm text-zinc-500">{lesson.plan?.title ?? lesson.fileName}</span>
       </header>
 
-      <div className="grid flex-1 grid-cols-1 lg:grid-cols-[1fr_380px]">
-        <main className="mx-auto w-full max-w-3xl px-4 py-8">
-          {lesson.phase !== "planning" && lesson.phase !== "awaiting_approval" && (
-            <div className="mb-8 space-y-4">
-              <XpBar progress={lesson.progress} cards={lesson.cards} onOpenCard={setOpenCardId} />
-              <QuestionProgress answered={lesson.answeredQuestions} total={lesson.totalQuestions} />
-            </div>
-          )}
+      <div className="grid flex-1 grid-cols-1 lg:min-h-0 lg:grid-cols-[1fr_380px]">
+        <div className="lg:min-h-0 lg:overflow-y-auto">
+          <main className="mx-auto w-full max-w-3xl px-4 py-8">
+            {lesson.phase !== "planning" && lesson.phase !== "awaiting_approval" && (
+              <div className="mb-8 space-y-4">
+                <XpBar progress={lesson.progress} cards={lesson.cards} onOpenCard={setOpenCardId} />
+                <QuestionProgress answered={lesson.answeredQuestions} total={lesson.totalQuestions} />
+              </div>
+            )}
 
-          {error && (
-            <div className="mb-6 rounded-lg border border-rose-300 bg-rose-50 px-4 py-3 text-sm text-rose-700 dark:border-rose-800 dark:bg-rose-950/40 dark:text-rose-300">
-              {error}{" "}
-              <button className="underline" onClick={() => refresh().then(() => setError(null))}>
-                Retry
-              </button>
-            </div>
-          )}
+            {error && (
+              <div className="mb-6 rounded-lg border border-rose-300 bg-rose-50 px-4 py-3 text-sm text-rose-700 dark:border-rose-800 dark:bg-rose-950/40 dark:text-rose-300">
+                {error}{" "}
+                <button className="underline" onClick={() => refresh().then(() => setError(null))}>
+                  Retry
+                </button>
+              </div>
+            )}
 
-          {loading && <Spinner label={loading} />}
+            {loading && <Spinner label={loading} />}
 
-          {!loading && lesson.phase === "awaiting_approval" && lesson.plan && (
-            <PlanReview
-              plan={lesson.plan}
-              onRevise={(feedback) => run("Revising the plan…", () => api.revisePlan(lesson.id, feedback))}
-              onApprove={(ids) => run("Starting your lesson…", () => api.approvePlan(lesson.id, ids))}
-            />
-          )}
+            {!loading && lesson.phase === "awaiting_approval" && lesson.plan && (
+              <PlanReview
+                plan={lesson.plan}
+                onRevise={(feedback) => run("Revising the plan…", () => api.revisePlan(lesson.id, feedback))}
+                onApprove={(ids) => run("Starting your lesson…", () => api.approvePlan(lesson.id, ids))}
+              />
+            )}
 
-          {!loading && inQuiz && question && (
-            <QuizWidget
-              key={question.id}
-              lessonId={lesson.id}
-              question={question}
-              total={lesson.totalQuestions}
-              objective={lesson.plan?.objectives.find((o) => o.id === question.objectiveId)}
-              isLast={lesson.phase === "complete"}
-              onAnswered={onAnswered}
-              onNext={onNext}
-            />
-          )}
+            {!loading && inQuiz && question && (
+              <QuizWidget
+                key={question.id}
+                lessonId={lesson.id}
+                question={question}
+                total={lesson.totalQuestions}
+                objective={lesson.plan?.objectives.find((o) => o.id === question.objectiveId)}
+                isLast={lesson.phase === "complete"}
+                onAnswered={onAnswered}
+                onNext={onNext}
+              />
+            )}
 
-          {!loading && inQuiz && !question && lesson.waitingOn?.status === "pending" && (
-            <Spinner
-              label={lesson.answeredQuestions === 0 ? "Writing your questions…" : "Finishing the next set of questions…"}
-            />
-          )}
+            {!loading && inQuiz && !question && lesson.waitingOn?.status === "pending" && (
+              <Spinner
+                label={lesson.answeredQuestions === 0 ? "Writing your questions…" : "Finishing the next set of questions…"}
+              />
+            )}
 
-          {!loading && inQuiz && !question && lesson.waitingOn?.status === "failed" && (
-            <div className="rounded-xl border border-rose-300 p-5 text-sm dark:border-rose-800">
-              Something went wrong writing these questions.{" "}
-              <button className="font-medium underline" onClick={() => run("Retrying…", () => api.generate(lesson.id))}>
-                Try again
-              </button>
-            </div>
-          )}
+            {!loading && inQuiz && !question && lesson.waitingOn?.status === "failed" && (
+              <div className="rounded-xl border border-rose-300 p-5 text-sm dark:border-rose-800">
+                Something went wrong writing these questions.{" "}
+                <button className="font-medium underline" onClick={() => run("Retrying…", () => api.generate(lesson.id))}>
+                  Try again
+                </button>
+              </div>
+            )}
 
-          {!loading && lesson.phase === "complete" && showReport && lesson.report && <ProgressReport lesson={lesson} />}
-        </main>
+            {!loading && lesson.phase === "complete" && showReport && lesson.report && <ProgressReport lesson={lesson} />}
+          </main>
+        </div>
 
-        <aside className="border-t border-zinc-200 lg:sticky lg:top-0 lg:h-screen lg:border-l lg:border-t-0 dark:border-zinc-800">
+        <aside className="h-[32rem] border-t border-zinc-200 lg:h-auto lg:min-h-0 lg:border-l lg:border-t-0 dark:border-zinc-800">
           <TutorChat lesson={lesson} onTurnComplete={refresh} />
         </aside>
       </div>

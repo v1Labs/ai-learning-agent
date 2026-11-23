@@ -26,3 +26,4 @@ Lightweight ADRs ([Nygard format](https://cognitect.com/blog/2011/11/15/document
 | [0010](0010-discovery-card-scheduling-and-research.md) | Schedule each card's topic at approval; research in two steps | Accepted |
 | [0011](0011-cap-uploads-at-100-pages.md) | Cap uploads at 100 pages, checked at upload | Accepted |
 | [0012](0012-process-large-pdfs-in-sections.md) | Process large PDFs as a table of contents plus ≤100-page sections | Proposed |
+| [0013](0013-tutor-persona.md) | Give the tutor a persona: "Sage", a study-buddy owl | Accepted |

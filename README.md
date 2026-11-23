@@ -41,7 +41,7 @@ Each decision below has an Architecture Decision Record with context, alternativ
 - `planner.ts`: drafts and revises the plan (structured output, Zod schema).
 - `quizmaster.ts`: generates an objective's questions in one call, each with an explanation and 2 escalating hints, and validates its own output (regenerates the shortfall if malformed).
 - `cardwriter.ts`: researches a discovery card with web search, then formats it with a verified source (PDF fallback).
-- `tutor.ts`: streaming tool-use loop for open-ended help.
+- `tutor.ts`: streaming tool-use loop for open-ended help, voiced by **Sage**, a study-buddy persona defined once in `src/lib/persona.ts` (ADR 0013).
 - `reporter.ts`: the narrative report on top of deterministically computed stats.
 
 **Claude API usage** (`@anthropic-ai/sdk`, `claude-opus-5-5`, overridable via `CLAUDE_MODEL`):

@@ -2,11 +2,16 @@ import "server-only";
 import Anthropic from "@anthropic-ai/sdk";
 import { anthropic, baseParams, pdfDocumentBlock } from "../claude";
 import { currentObjective, LESSON_QUESTIONS, openQuestion, revealNextHint } from "../lesson";
+import { TUTOR } from "../persona";
 import { saveLesson, withLesson } from "../store";
 import type { Lesson } from "../types";
 
 // Stable across the whole lesson so tools + system + PDF form a cached prefix.
-const TUTOR_SYSTEM = `You are a Socratic tutor guiding a learner through a structured lesson built from the attached document. The lesson has an approved plan of learning objectives, and the learner answers multiple-choice questions for each objective in a quiz widget next to this chat.
+const TUTOR_SYSTEM = `You are ${TUTOR.name}, a Socratic tutor guiding a learner through a structured lesson built from the attached document. ${TUTOR.personality}
+
+The learner sees your name and an owl avatar in a chat panel beside the quiz. They have already seen this greeting from you: "${TUTOR.greeting}"
+
+The lesson has an approved plan of learning objectives, and the learner answers multiple-choice questions for each objective in a quiz widget next to this chat.
 
 How to help:
 - Answer questions about the material, explain concepts, and give examples, grounded in the document.
